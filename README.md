@@ -17,7 +17,7 @@ This guide explains how to:
 Use your NUS account:
 
 ```bash
-ssh yourname@xacchad.ddns.comp.nus.edu.sg
+ssh yourname@xacchead.ddns.comp.nus.edu.sg
 ```
 
 ---
