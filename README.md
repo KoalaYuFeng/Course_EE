@@ -24,45 +24,79 @@ ssh yourname@xacchad.ddns.comp.nus.edu.sg
 
 ## 2. Request an MI100 GPU node (interactive session)
 
-Use **srun** to request a GPU node with 1 MI100 GPU and 8 CPU cores:
+Use **srun** to request a GPU node and 8 CPU cores:
 
 ```bash
-srun -p 8xMI100 -c 8 --gres=gpu:1 --pty bash
+srun -p 8xMI100 -c 8 --pty bash
 ```
-
-You will be placed on a GPU node such as `hacc-gpu1`, `hacc-gpu5`, etc.
 
 ---
 
-## 3. Verify the GPUs on the node
+## 3. Check which GPUs are currently in use
+
+Before entering the Apptainer environment, inspect the MI100 GPUs on the node:
 
 ```bash
 rocm-smi
 ```
 
-You should see something similar to:
+This shows all 8 MI100 GPUs and their usage status. Example:
 
 ```
-========================ROCm System Management Interface========================
-GPU  Temp   Power   Memory   Usage  ...
-0    45°C   30W     0%       0%     AMD Instinct MI100
-1    44°C   29W     0%       0%     AMD Instinct MI100
-...
+GPU[0]   Busy   PID: 3112 (alice: python)
+GPU[1]   Idle
+GPU[2]   Busy   PID: 4221 (bob: train.py)
+GPU[3]   Idle
+GPU[4]   Idle
+GPU[5]   Busy   PID: 8123 (charlie: notebook)
+GPU[6]   Idle
+GPU[7]   Idle
 ```
 
-This confirms you are on a node with AMD MI100 GPUs.
+### You can see:
+
+- Which GPUs are **Idle**
+- Which GPUs are **Busy**
+- Which user/process is using each GPU
+
+### Choosing a GPU
+
+If you want to use a specific free GPU (for example GPU 3), export its ID:
+
+```bash
+export HIP_VISIBLE_DEVICES=3
+```
+
+Then enter the Apptainer environment:
+
+```bash
+apptainer exec --rocm /opt/containers/hacc_rocm63.sif bash
+```
+
+Inside the container:
+
+```bash
+python3 - << 'EOF'
+import torch
+print("GPU available:", torch.cuda.is_available())
+print("GPU:", torch.cuda.get_device_name(0) if torch.cuda.is_available() else None)
+EOF
+```
+
+Expected result:
+
+```
+GPU available: True
+GPU: AMD Instinct MI100
+```
+
+This means your process is now using **GPU 3** (or whichever GPU you selected).
 
 ---
 
 ## 4. Enter the course Apptainer environment
 
-The course environment is packaged as:
-
-```
-/opt/containers/hacc_rocm63.sif
-```
-
-Start an interactive shell inside it:
+Start an interactive shell inside the container:
 
 ```bash
 apptainer exec --rocm /opt/containers/hacc_rocm63.sif bash
@@ -78,9 +112,7 @@ You are now inside the custom teaching environment with Python, PyTorch, GCC, CM
 
 ---
 
-## 5. Test GPU access inside the container
-
-Run the following Python test:
+## 5. Test GPU access inside Apptainer
 
 ```bash
 python3 - << 'EOF'
@@ -90,14 +122,12 @@ print("GPU:", torch.cuda.get_device_name(0) if torch.cuda.is_available() else No
 EOF
 ```
 
-Expected output:
+Expected:
 
 ```
 GPU available: True
 GPU: AMD Instinct MI100
 ```
-
-This means PyTorch has successfully detected the GPU via ROCm.
 
 ---
 
@@ -119,7 +149,7 @@ cd <your_project_repo_dir>
 make
 ```
 
-or using CMake:
+or CMake:
 
 ```bash
 mkdir build
@@ -138,24 +168,33 @@ All files will be stored in your home directory, not inside the container.
 
 ---
 
-## 7. Exit the container and the node
+## 7. Installing additional Python packages (students)
 
-Exit Apptainer:
+You should **not modify the shared container image**.  
+Instead, install extra Python packages into your **own home directory**:
 
 ```bash
-exit
+pip install --user <package-name>
 ```
 
-Exit the GPU node:
+Examples:
 
 ```bash
-exit
+pip install --user transformers
+pip install --user networkx
+pip install --user matplotlib
 ```
 
-Exit the login node:
+Packages are installed to:
+
+```
+~/.local/lib/python3.x/site-packages/
+```
+
+If Python cannot find the package, add:
 
 ```bash
-exit
+export PYTHONPATH=$HOME/.local/lib/python3.10/site-packages:$PYTHONPATH
 ```
 
 ---
@@ -165,10 +204,11 @@ exit
 | Task | Command |
 |------|---------|
 | SSH into cluster | `ssh yourname@xacchad.ddns.comp.nus.edu.sg` |
-| Request MI100 GPU node | `srun -p 8xMI100 -c 8 --gres=gpu:1 --pty bash` |
-| Check GPU info | `rocm-smi` |
-| Enter Apptainer container | `apptainer exec --rocm /opt/containers/hacc_rocm63.sif bash` |
+| Check GPU usage | `rocm-smi` |
+| Choose GPU 3 | `export HIP_VISIBLE_DEVICES=3` |
+| Enter container | `apptainer exec --rocm /opt/containers/hacc_rocm63.sif bash` |
 | Test PyTorch GPU | *(Python script above)* |
+| Install Python package | `pip install --user <package>` |
 | Exit container | `exit` |
 
 ---
