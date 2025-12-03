@@ -70,17 +70,19 @@ export HIP_VISIBLE_DEVICES=3
 Then enter the Apptainer environment:
 
 ```bash
-apptainer exec --rocm /opt/containers/hacc_rocm63.sif bash
+apptainer exec --rocm --cleanenv /opt/containers/hacc_rocm63.sif bash --noprofile --norc
 ```
 
-Inside the container:
-
+Inside the container, set the environmental variables first:
 ```bash
-/usr/local/bin/python
+export PATH=/usr/local/bin:/usr/bin:/bin
+```
+Then execute the commands to check the GPU availablity:
+```bash
+python
 import torch
 print("GPU available:", torch.cuda.is_available())
 print("GPU:", torch.cuda.get_device_name(0) if torch.cuda.is_available() else None)
-EOF
 ```
 
 Expected result:
@@ -94,44 +96,7 @@ This means your process is now using **GPU 3** (or whichever GPU you selected).
 
 ---
 
-## 4. Enter the course Apptainer environment
-
-Start an interactive shell inside the container:
-
-```bash
-apptainer exec --rocm /opt/containers/hacc_rocm63.sif bash
-```
-
-Your prompt will change to:
-
-```
-Apptainer>
-```
-
-You are now inside the custom teaching environment with Python, PyTorch, GCC, CMake, etc.
-
----
-
-## 5. Test GPU access inside Apptainer
-
-```bash
-python3 - << 'EOF'
-import torch
-print("GPU available:", torch.cuda.is_available())
-print("GPU:", torch.cuda.get_device_name(0) if torch.cuda.is_available() else None)
-EOF
-```
-
-Expected:
-
-```
-GPU available: True
-GPU: AMD Instinct MI100
-```
-
----
-
-## 6. Build your own project (NeuroSim or any C++/Python project)
+## 4. Build your own project (NeuroSim or any C++/Python project)
 
 Inside the Apptainer environment:
 
@@ -168,7 +133,7 @@ All files will be stored in your home directory, not inside the container.
 
 ---
 
-## 7. Installing additional Python packages (students)
+## 5. Installing additional Python packages (students)
 
 You should **not modify the shared container image**.  
 Instead, install extra Python packages into your **own home directory**:
