@@ -76,7 +76,7 @@ apptainer exec --rocm /opt/containers/hacc_rocm63.sif bash
 Inside the container:
 
 ```bash
-python3 - << 'EOF'
+/usr/local/bin/python
 import torch
 print("GPU available:", torch.cuda.is_available())
 print("GPU:", torch.cuda.get_device_name(0) if torch.cuda.is_available() else None)
